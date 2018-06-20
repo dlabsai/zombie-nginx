@@ -285,7 +285,7 @@ def generate_server(name, description, upstreams):
             config.append(('include', 'uwsgi_params'))
             config.append(('uwsgi_pass', upstream['name']))
         elif upstream['type'] == 'http':
-            config.append(('proxy_pass', upstream['name']))
+            config.append(('proxy_pass', f'http://{upstream["name"]}'))
         else:
             raise NotImplementedError(f'Someone was naughty and did not implement the {upstream["type"]} upstream type')
         extra_config.append(('location', upstream['location'], config))
