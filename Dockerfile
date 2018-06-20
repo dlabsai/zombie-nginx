@@ -45,16 +45,17 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
     && adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx \
     && apk update && apk upgrade \
     && apk add --no-cache --virtual .build-deps \
+        curl \
         gcc \
+        gnupg \
         libc-dev \
+        libffi-dev \
+        linux-headers \
         make \
         openssl-dev \
         pcre-dev \
+        python3-dev \
         zlib-dev \
-        linux-headers \
-        curl \
-        gnupg \
-    && apk add --no-cache certbot \
     && curl -fSL http://nginx.org/download/nginx-$NGINX_VERSION.tar.gz -o nginx.tar.gz \
     && curl -fSL http://nginx.org/download/nginx-$NGINX_VERSION.tar.gz.asc  -o nginx.tar.gz.asc \
     && export GNUPGHOME="$(mktemp -d)" \
@@ -92,10 +93,11 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
     # then move `envsubst` out of the way so `gettext` can
     # be deleted completely, then move `envsubst` back.
     && apk add --no-cache --virtual .gettext gettext \
+    && cd / && apk add --no-cache python3 && pip3 install --no-cache-dir PyYAML==3.12 certbot \
     && mv /usr/bin/envsubst /tmp/ \
     \
     && runDeps="$( \
-        scanelf --needed --nobanner --format '%n#p' /usr/sbin/nginx /tmp/envsubst \
+        scanelf --needed --nobanner --format '%n#p' /usr/sbin/nginx /usr/lib/python3.6/site-packages /tmp/envsubst \
             | tr ',' '\n' \
             | sort -u \
             | awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
@@ -104,7 +106,6 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
     && apk del .build-deps \
     && apk del .gettext \
     && mv /tmp/envsubst /usr/local/bin/ \
-    && cd / && apk add --no-cache python3 && pip3 install --no-cache-dir PyYAML==3.12 \
     && mkdir /etc/nginx/certs \
     # forward request and error logs to docker log collector
     && ln -sf /dev/stdout /var/log/nginx/access.log \
