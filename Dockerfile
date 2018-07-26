@@ -113,6 +113,7 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
     && ln -sf /dev/stderr /var/log/nginx/error.log
 
 COPY crontab /etc/cron.d/cert_renew
+COPY renew-certs.sh /renew-certs.sh
 COPY entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 COPY appconf.py /opt/appconf.py
