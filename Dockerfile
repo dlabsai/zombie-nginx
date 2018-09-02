@@ -2,7 +2,7 @@ FROM alpine:edge
 
 LABEL maintainer="Marcin Baczyński <marcin.baczynski@dlabs.pl>"
 
-ENV NGINX_VERSION 1.14.0
+ENV NGINX_VERSION 1.15.3
 
 RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
     && CONFIG="\
