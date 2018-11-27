@@ -93,7 +93,8 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
     # then move `envsubst` out of the way so `gettext` can
     # be deleted completely, then move `envsubst` back.
     && apk add --no-cache --virtual .gettext gettext \
-    && cd / && apk add --no-cache python3 && pip3 install --no-cache-dir PyYAML==3.12 certbot \
+    && cd / && apk add --no-cache python3 \
+    && pip3 install -U pip && pip3 install --no-cache-dir PyYAML==3.13 certbot \
     && mv /usr/bin/envsubst /tmp/ \
     \
     && runDeps="$( \
