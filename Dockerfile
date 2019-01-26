@@ -44,7 +44,7 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
     && addgroup -S nginx \
     && adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx \
     && apk update && apk upgrade \
-    && apk add --no-cache --virtual .build-deps \
+    && apk add --virtual .build-deps \
         curl \
         gcc \
         gnupg \
@@ -92,9 +92,9 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
     # the rest away. To do this, we need to install `gettext`
     # then move `envsubst` out of the way so `gettext` can
     # be deleted completely, then move `envsubst` back.
-    && apk add --no-cache --virtual .gettext gettext \
-    && cd / && apk add --no-cache python3 \
-    && pip3 install -U pip && pip3 install --no-cache-dir PyYAML==3.13 certbot \
+    && apk add --virtual .gettext gettext \
+    && cd / && apk add python3 \
+    && pip3 install -U pip && pip3 install PyYAML==3.13 certbot \
     && mv /usr/bin/envsubst /tmp/ \
     \
     && runDeps="$( \
@@ -106,6 +106,7 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
     && apk add --no-cache --virtual .nginx-rundeps $runDeps \
     && apk del .build-deps \
     && apk del .gettext \
+    && rm -rf /root/.cache /var/cache/apk \
     && mv /tmp/envsubst /usr/local/bin/ \
     && mkdir /etc/nginx/certs \
     && mkdir -p /var/www/letsencrypt \
