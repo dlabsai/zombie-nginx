@@ -93,7 +93,7 @@ def _base_config_http_common(server_name, strict_host):
 
 def base_config_https_redirect(server_name, strict_host):
     return _base_config_http_common(server_name, strict_host) + [
-        ('return', '301', f'https://{server_name}$request_uri'),
+        ('return', '301', 'https://$server_name$request_uri')
     ]
 
 
