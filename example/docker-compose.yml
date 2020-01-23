@@ -1,0 +1,21 @@
+version: '3.7'
+
+services:
+  webapp:
+    container_name: hello-webapp
+    build: .
+    restart: always
+    networks:
+      - back-tier
+
+  nginx:
+    container_name: hello-nginx
+    image: typeai/zombie-nginx
+    restart: always
+    networks:
+      - back-tier
+    depends_on:
+      - webapp
+
+networks:
+  back-tier:

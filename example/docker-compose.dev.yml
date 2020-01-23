@@ -1,0 +1,12 @@
+version: '3.7'
+
+services:
+  webapp:
+    environment:
+      - FLASK_ENV=development
+  nginx:
+    volumes:
+      - ./backend-nginx-dev.yml:/etc/appconf/nginx.yml:ro
+      - ./static:/var/www/webapp-static:ro
+    ports:
+      - 0.0.0.0:80:80
