@@ -77,6 +77,22 @@ Each entry in the `servers` section represents a separate virtual host.
     if a string is given, it is interpreted to be `upstream.url`, with `upstream.location` set to `/`,
     and `upstream.name` `$server_name-upstream`
 
+### Setting nginx options directly
+
+To add or override an nginx option directly in the generated `nginx.conf` file, add desired settings in the
+`http_raw_options` or `server_raw_options` array.
+
+```yaml
+http_raw_options:
+  - keepalive_timeout 10
+servers:
+  webapp:
+    server_name: my-webapp.example.com
+    upstream: uwsgi://webapp:12345
+    server_raw_options:
+      - client_max_body_size 10M
+```
+
 ## Known issues
 
 The project was only tested with a few specific setups, and certainly not with every possible combination of settings.

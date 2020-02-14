@@ -190,7 +190,7 @@ def parse_single_upstream(server_name, config):
         'name': config['name'],
         'location': config['location'],
     }
-    for proto in ('http', 'uwsgi'):
+    for proto in 'http', 'uwsgi':
         if config['url'].startswith(f'{proto}://'):
             upstream.update(url=config['url'][len(proto) + 3:], type=proto)
             return upstream
@@ -243,7 +243,12 @@ def generate_server(name, description, upstreams):
     extra_config = []
 
     for item, content in description.items():
-        if item == 'server_name':
+        if item == 'server_raw_options':
+            if not isinstance(content, list):
+                raise Exception(f'{name}.server_raw_options must be an array')
+            for option in content:
+                extra_config.append(option.split(' '))
+        elif item == 'server_name':
             server_name = content
         elif item == 'static_files':
             extra_config.extend(generate_static_files(content))
@@ -314,6 +319,22 @@ def generate_servers(app_conf, upstreams):
     return servers
 
 
+def generate_http(app_conf):
+    http = _NGINX_HTTP.copy()
+    for entry in app_conf.get('http_raw_options', []):
+        parts = entry.split(' ')
+        if parts[0] == 'include':
+            http.append(parts)
+            continue
+        for idx, option in enumerate(http):
+            if option[0] == parts[0]:
+                http[idx] = parts
+                break
+        else:
+            http.append(parts)
+    return http
+
+
 def main():
     try:
         with open(sys.argv[1]) as config_yml:
@@ -324,7 +345,7 @@ def main():
 
     upstreams_conf, upstreams_data = parse_upstreams(app_conf)
     servers_conf = generate_servers(app_conf, upstreams_data)
-    http = _NGINX_HTTP.copy()
+    http = generate_http(app_conf)
     http.extend(upstreams_conf)
     http.extend(servers_conf)
     nginx_conf = _NGINX_GLOBALS.copy()
