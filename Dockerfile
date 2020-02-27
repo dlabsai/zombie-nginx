@@ -2,7 +2,7 @@ FROM alpine:edge
 
 LABEL maintainer="Marcin Baczyński <marcin.baczynski@dlabs.pl>"
 
-ENV NGINX_VERSION 1.17.6
+ENV NGINX_VERSION 1.17.8
 
 RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
     && CONFIG="\
@@ -87,27 +87,20 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
     && ln -s ../../usr/lib/nginx/modules /etc/nginx/modules \
     && strip /usr/sbin/nginx* \
     && rm -rf /usr/src/nginx-$NGINX_VERSION \
-    \
-    # Bring in gettext so we can get `envsubst`, then throw
-    # the rest away. To do this, we need to install `gettext`
-    # then move `envsubst` out of the way so `gettext` can
-    # be deleted completely, then move `envsubst` back.
-    && apk add --virtual .gettext gettext \
     && cd / && apk add python3 \
-    && pip3 install -U pip && pip3 install PyYAML==3.13 certbot \
-    && mv /usr/bin/envsubst /tmp/ \
+    && apk add py3-pip \
+    && pip3 install -U pip && pip3 install PyYAML>=5.3 \
+    && apk add certbot \
     \
     && runDeps="$( \
-        scanelf --needed --nobanner --format '%n#p' /usr/sbin/nginx /usr/lib/python3.6/site-packages /tmp/envsubst \
+        scanelf --needed --nobanner --format '%n#p' /usr/sbin/nginx /usr/lib/python3.8/site-packages \
             | tr ',' '\n' \
             | sort -u \
             | awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
     )" \
     && apk add --no-cache --virtual .nginx-rundeps $runDeps \
     && apk del .build-deps \
-    && apk del .gettext \
     && rm -rf /root/.cache /var/cache/apk \
-    && mv /tmp/envsubst /usr/local/bin/ \
     && mkdir /etc/nginx/certs \
     && mkdir -p /var/www/letsencrypt \
     # forward request and error logs to docker log collector
