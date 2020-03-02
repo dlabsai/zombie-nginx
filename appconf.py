@@ -87,13 +87,14 @@ def _base_config_http_common(server_name, strict_host):
         ('server_name', server_name),
     ]
     if strict_host:
-        config.append(('if', f'($http_host !~* ^{server_name}$)', [('return', '444')]))
+        regex_server_name = '|'.join(server_name.split(' '))
+        config.append(('if', f'($http_host !~* ^{regex_server_name}$)', [('return', '444')]))
     return config
 
 
 def base_config_https_redirect(server_name, strict_host):
     return _base_config_http_common(server_name, strict_host) + [
-        ('return', '301', 'https://$server_name$request_uri')
+        ('return', '301', 'https://$http_host$request_uri')
     ]
 
 
@@ -104,11 +105,12 @@ def base_config_http(server_name, strict_host):
 
 
 def base_config_https(server_name, strict_host):
+    regex_server_name = '|'.join(server_name.split(' '))
     return [
         ('listen', '443', 'ssl', 'http2', 'deferred', 'reuseport'),
         ('listen', '[::]:443', 'ssl', 'http2', 'deferred', 'reuseport'),
         ('server_name', server_name),
-    ] + ([('if', f'($http_host !~* ^{server_name}$)', [('return', '444')])] if strict_host else []) + [
+    ] + ([('if', f'($http_host !~* ^{regex_server_name}$)', [('return', '444')])] if strict_host else []) + [
         ('add_header', name, value, 'always') for name, value in _HTTPS_HEADERS.items()
     ] + [
         ('ssl_protocols', 'TLSv1.2'),
