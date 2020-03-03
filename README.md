@@ -97,8 +97,6 @@ servers:
 
 The project was only tested with a few specific setups, and certainly not with every possible combination of settings.
 
-In particular, expect automatic TLS to fail with anything more complicated than a single domain.
-
 ## Contributing
 
 Of course, pull requests are welcome. Keep in mind though that ease of use and as little configuration as possible are
