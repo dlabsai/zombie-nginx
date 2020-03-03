@@ -229,10 +229,11 @@ def generate_tls_config(cert):
 
 
 def activate_lets_encrypt(server_name):
+    server_names = server_name.split(' ')
     with open('/tmp/le-domain.txt', 'w') as f:
-        f.write('-d ' + ' -d '.join(server_name.split(' ')))
-    if len(names := server_name.split(' ')) > 1:
-        server_name = names[0]
+        f.write(' '.join(f'-d {domain}' for domain in server_names))
+    if len(server_names) > 1:
+        server_name = server_names[0]
     return {
         'certificate': f'live/{server_name}/fullchain.pem',
         'key': f'live/{server_name}/privkey.pem',
