@@ -44,7 +44,7 @@ a nice `nginx.conf` to nginx, and server your application via HTTPS with certifi
 Each entry in the `servers` section represents a separate virtual host.
 
 - `check_host_header`: optional, bool, default `yes`; whether to close connection on invalid `HTTP_HOST`
-- `server_name`: required, string; domain name where your site lives
+- `server_name`: required, string; domain name where your site lives, can be a list of domains separated with space
 - `static_files`: optional, string or mapping or array of mappings; maps a location on the virtual host to a mounted
  volume with static files
 
