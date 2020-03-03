@@ -1,0 +1,16 @@
+version: '3.7'
+
+services:
+  webapp:
+    environment:
+      - FLASK_ENV=production
+
+  nginx:
+    volumes:
+      - ./backend-nginx-prod.yml:/etc/appconf/nginx.yml:ro
+      - ./static:/var/www/webapp-static:ro
+    environment:
+      - LETSENCRYPT_EMAIL=example@example.com
+    ports:
+      - 0.0.0.0:80:80
+      - 0.0.0.0:443:443

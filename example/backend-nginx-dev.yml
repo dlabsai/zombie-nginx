@@ -1,0 +1,7 @@
+servers:
+  webapp:
+    server_name: dlabs.ai
+    check_host_header: no
+    upstream: uwsgi://webapp:3031
+    static_files: /var/www/webapp-static
+    tls: no
