@@ -194,8 +194,11 @@ def parse_single_upstream(server_name, config):
         'location': config['location'],
     }
 
-    if "upstream_raw_options" in config:
-        upstream.update(upstream_raw_options=config["upstream_raw_options"])
+    upstream_raw_options = config.get("upstream_raw_options", [])
+    if upstream_raw_options:
+        if not isinstance(upstream_raw_options, list):
+            raise Exception(f'{server_name}.upstream_raw_options must be an array')
+        upstream.update(upstream_raw_options=upstream_raw_options)
 
     for proto in 'http', 'uwsgi':
         if config['url'].startswith(f'{proto}://'):
@@ -297,6 +300,7 @@ def generate_server(name, description, upstreams):
             ('proxy_set_header', 'X-Forwarded-For', '$proxy_add_x_forwarded_for'),
             ('proxy_set_header', 'Host', '$http_host'),
         ]
+
         for option in upstream.get("upstream_raw_options", []):
             config.append(option.split(" "))
         if upstream['type'] == 'uwsgi':
