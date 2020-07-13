@@ -80,10 +80,11 @@ _NGINX_HTTP = [
 ]
 
 
-def _base_config_http_common(server_name, strict_host):
+def _base_config_http_common(server_name, strict_host, default_http_server=False):
+    default_server_specific_settings = ("deferred", "reuseport") if default_http_server else ()
     config = [
-        ('listen', '80', 'deferred', 'reuseport'),
-        ('listen', '[::]:80', 'deferred', 'reuseport'),
+        ('listen', '80') + default_server_specific_settings,
+        ('listen', '[::]:80') + default_server_specific_settings,
         ('server_name', server_name),
     ]
     if strict_host:
@@ -92,23 +93,24 @@ def _base_config_http_common(server_name, strict_host):
     return config
 
 
-def base_config_https_redirect(server_name, strict_host):
-    return _base_config_http_common(server_name, strict_host) + [
+def base_config_https_redirect(server_name, strict_host, default_http_server=False):
+    return _base_config_http_common(server_name, strict_host, default_http_server) + [
         ('return', '301', 'https://$http_host$request_uri')
     ]
 
 
-def base_config_http(server_name, strict_host):
-    return _base_config_http_common(server_name, strict_host) + [
+def base_config_http(server_name, strict_host, default_http_server=False):
+    return _base_config_http_common(server_name, strict_host, default_http_server) + [
         ('add_header', name, value, 'always') for name, value in _HTTP_HEADERS.items()
     ]
 
 
-def base_config_https(server_name, strict_host):
+def base_config_https(server_name, strict_host, default_https_server=False):
     regex_server_name = '|'.join(server_name.split(' '))
+    default_server_specific_settings = ("deferred", "reuseport") if default_https_server else ()
     return [
-        ('listen', '443', 'ssl', 'http2', 'deferred', 'reuseport'),
-        ('listen', '[::]:443', 'ssl', 'http2', 'deferred', 'reuseport'),
+        ('listen', '443', 'ssl', 'http2') + default_server_specific_settings,
+        ('listen', '[::]:443', 'ssl', 'http2') + default_server_specific_settings,
         ('server_name', server_name),
     ] + ([('if', f'($http_host !~* ^{regex_server_name}$)', [('return', '444')])] if strict_host else []) + [
         ('add_header', name, value, 'always') for name, value in _HTTPS_HEADERS.items()
@@ -254,7 +256,8 @@ def generate_server(name, description, upstreams):
     tls = None
     check_host_header = True
     extra_config = []
-
+    default_http_server = False
+    default_https_server = False
     for item, content in description.items():
         if item == 'server_raw_options':
             if not isinstance(content, list):
@@ -273,6 +276,10 @@ def generate_server(name, description, upstreams):
             check_host_header = content
         elif item == 'upstream':
             pass  # handled by parse_upstreams
+        elif item == 'default_http_server':
+            default_http_server = item
+        elif item == 'default_https_server':
+            default_https_server = item
         else:
             raise Exception(f'unknown option {name}.{item}')
 
@@ -316,20 +323,37 @@ def generate_server(name, description, upstreams):
     if use_tls:
         servers.append(('server', [
             ('#', name, '- force HTTPS'),
-        ] + base_config_https_redirect(server_name, check_host_header)))
+        ] + base_config_https_redirect(server_name, check_host_header, default_http_server)))
         servers.append(('server', [
             ('#', name),
-        ] + base_config_https(server_name, check_host_header) + extra_config))
+        ] + base_config_https(server_name, check_host_header, default_https_server) + extra_config))
     else:
         servers.append(('server', [
             ('#', name),
-        ] + base_config_http(server_name, check_host_header) + extra_config))
+        ] + base_config_http(server_name, check_host_header, default_http_server) + extra_config))
+    return servers
+
+
+def set_default_server_flags(servers):
+    http_used, https_used = False, False
+    for name, description in servers.items():
+        if not http_used and description.get('tls') is False:
+            http_used = True
+            description['default_http_server'] = True
+        elif not https_used and description.get('tls') in [True, 'auto']:
+            if not http_used:
+                http_used = True
+                description['default_http_server'] = True
+            https_used = True
+            description['default_https_server'] = True
+        if http_used and https_used:
+            break
     return servers
 
 
 def generate_servers(app_conf, upstreams):
     servers = []
-    input_servers = app_conf.get('servers', {})
+    input_servers = set_default_server_flags(app_conf.get('servers', {}))
     for name, description in input_servers.items():
         servers.extend(generate_server(name, description, upstreams.get(name, [])))
     return servers
