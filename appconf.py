@@ -134,6 +134,7 @@ def emit_nginx_conf(config, *, indent=0):
     white = ' ' * indent
     for item in config:
         if isinstance(item[-1], list):
+            print(white)
             print(white + ' '.join(item[0:-1]) + ' {')
             emit_nginx_conf(item[-1], indent=indent + 2)
             print(white + '}')
