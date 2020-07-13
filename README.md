@@ -80,7 +80,7 @@ Each entry in the `servers` section represents a separate virtual host.
 ### Setting nginx options directly
 
 To add or override an nginx option directly in the generated `nginx.conf` file, add desired settings in the
-`http_raw_options` or `server_raw_options` array.
+`http_raw_options`, `server_raw_options`, or `upstream_raw_options` array.
 
 ```yaml
 http_raw_options:
@@ -88,9 +88,14 @@ http_raw_options:
 servers:
   webapp:
     server_name: my-webapp.example.com
-    upstream: uwsgi://webapp:12345
     server_raw_options:
       - client_max_body_size 10M
+    upstream:
+      name: webapp-upstream
+      url:  uwsgi://webapp:12345
+      location: /
+      upstream_raw_options:
+        - add_header "Access-Control-Allow-Methods" "GET, POST, OPTIONS"
 ```
 
 ## Known issues
