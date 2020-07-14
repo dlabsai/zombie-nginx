@@ -80,11 +80,20 @@ _NGINX_HTTP = [
 ]
 
 
-def _base_config_http_common(server_name, strict_host, default_http_server=False):
-    default_server_specific_settings = ("deferred", "reuseport") if default_http_server else ()
+def _base_config_http_common(server_name, strict_host, use_syscall_flags=False):
+    """
+    The `use_syscall_flags = True` can be used only once. Quoting Nginx documentation: The listen directive can have
+    several additional parameters specific to socket-related system calls. These parameters can be specified in any
+    listen directive, but only once for a given address:port pair.
+    More info:
+
+    - https://stackoverflow.com/questions/30559164/nginxs-reuseport-for-same-ipport-pair-on-different-virtual-hosts
+    - http://nginx.org/en/docs/http/ngx_http_core_module.html#listen
+    """
+    syscall_flags = ('deferred', 'reuseport') if use_syscall_flags else ()
     config = [
-        ('listen', '80') + default_server_specific_settings,
-        ('listen', '[::]:80') + default_server_specific_settings,
+        ('listen', '80') + syscall_flags,
+        ('listen', '[::]:80') + syscall_flags,
         ('server_name', server_name),
     ]
     if strict_host:
@@ -93,24 +102,27 @@ def _base_config_http_common(server_name, strict_host, default_http_server=False
     return config
 
 
-def base_config_https_redirect(server_name, strict_host, default_http_server=False):
-    return _base_config_http_common(server_name, strict_host, default_http_server) + [
+def base_config_https_redirect(server_name, strict_host, use_syscall_flags=False):
+    return _base_config_http_common(server_name, strict_host, use_syscall_flags) + [
         ('return', '301', 'https://$http_host$request_uri')
     ]
 
 
-def base_config_http(server_name, strict_host, default_http_server=False):
-    return _base_config_http_common(server_name, strict_host, default_http_server) + [
+def base_config_http(server_name, strict_host, use_syscall_flags=False):
+    return _base_config_http_common(server_name, strict_host, use_syscall_flags) + [
         ('add_header', name, value, 'always') for name, value in _HTTP_HEADERS.items()
     ]
 
 
-def base_config_https(server_name, strict_host, default_https_server=False):
+def base_config_https(server_name, strict_host, use_syscall_flags=False):
+    """
+    Info about `use_syscall_flags` in `_base_config_http_common()` function.
+    """
+    syscall_flags = ('deferred', 'reuseport') if use_syscall_flags else ()
     regex_server_name = '|'.join(server_name.split(' '))
-    default_server_specific_settings = ("deferred", "reuseport") if default_https_server else ()
     return [
-        ('listen', '443', 'ssl', 'http2') + default_server_specific_settings,
-        ('listen', '[::]:443', 'ssl', 'http2') + default_server_specific_settings,
+        ('listen', '443', 'ssl', 'http2') + syscall_flags,
+        ('listen', '[::]:443', 'ssl', 'http2') + syscall_flags,
         ('server_name', server_name),
     ] + ([('if', f'($http_host !~* ^{regex_server_name}$)', [('return', '444')])] if strict_host else []) + [
         ('add_header', name, value, 'always') for name, value in _HTTPS_HEADERS.items()
@@ -196,7 +208,7 @@ def parse_single_upstream(server_name, config):
         'location': config['location'],
     }
 
-    upstream_raw_options = config.get("upstream_raw_options", [])
+    upstream_raw_options = config.get('upstream_raw_options', [])
     if upstream_raw_options:
         if not isinstance(upstream_raw_options, list):
             raise Exception(f'{server_name}.upstream_raw_options must be an array')
@@ -256,8 +268,8 @@ def generate_server(name, description, upstreams):
     tls = None
     check_host_header = True
     extra_config = []
-    default_http_server = False
-    default_https_server = False
+    use_syscall_flags_in_http = False
+    use_syscall_flags_in_https = False
     for item, content in description.items():
         if item == 'server_raw_options':
             if not isinstance(content, list):
@@ -276,10 +288,10 @@ def generate_server(name, description, upstreams):
             check_host_header = content
         elif item == 'upstream':
             pass  # handled by parse_upstreams
-        elif item == 'default_http_server':
-            default_http_server = item
-        elif item == 'default_https_server':
-            default_https_server = item
+        elif item == 'first_http_server':
+            use_syscall_flags_in_http = item
+        elif item == 'first_https_server':
+            use_syscall_flags_in_https = item
         else:
             raise Exception(f'unknown option {name}.{item}')
 
@@ -308,8 +320,8 @@ def generate_server(name, description, upstreams):
             ('proxy_set_header', 'Host', '$http_host'),
         ]
 
-        for option in upstream.get("upstream_raw_options", []):
-            config.append(option.split(" "))
+        for option in upstream.get('upstream_raw_options', []):
+            config.append(option.split(' '))
         if upstream['type'] == 'uwsgi':
             config.append(('include', 'uwsgi_params'))
             config.append(('uwsgi_pass', upstream['name']))
@@ -323,29 +335,29 @@ def generate_server(name, description, upstreams):
     if use_tls:
         servers.append(('server', [
             ('#', name, '- force HTTPS'),
-        ] + base_config_https_redirect(server_name, check_host_header, default_http_server)))
+        ] + base_config_https_redirect(server_name, check_host_header, use_syscall_flags_in_http)))
         servers.append(('server', [
             ('#', name),
-        ] + base_config_https(server_name, check_host_header, default_https_server) + extra_config))
+        ] + base_config_https(server_name, check_host_header, use_syscall_flags_in_https) + extra_config))
     else:
         servers.append(('server', [
             ('#', name),
-        ] + base_config_http(server_name, check_host_header, default_http_server) + extra_config))
+        ] + base_config_http(server_name, check_host_header, use_syscall_flags_in_http) + extra_config))
     return servers
 
 
-def set_default_server_flags(servers):
+def mark_first_http_and_first_https_server(servers):
     http_used, https_used = False, False
     for name, description in servers.items():
         if not http_used and description.get('tls') is False:
             http_used = True
-            description['default_http_server'] = True
+            description['first_http_server'] = True
         elif not https_used and description.get('tls') in [True, 'auto']:
             if not http_used:
                 http_used = True
-                description['default_http_server'] = True
+                description['first_http_server'] = True
             https_used = True
-            description['default_https_server'] = True
+            description['first_https_server'] = True
         if http_used and https_used:
             break
     return servers
@@ -353,7 +365,7 @@ def set_default_server_flags(servers):
 
 def generate_servers(app_conf, upstreams):
     servers = []
-    input_servers = set_default_server_flags(app_conf.get('servers', {}))
+    input_servers = mark_first_http_and_first_https_server(app_conf.get('servers', {}))
     for name, description in input_servers.items():
         servers.extend(generate_server(name, description, upstreams.get(name, [])))
     return servers
