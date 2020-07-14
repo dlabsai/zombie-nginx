@@ -230,8 +230,8 @@ def generate_tls_config(cert):
 
 def activate_lets_encrypt(server_name):
     server_names = server_name.split(' ')
-    with open('/tmp/le-domain.txt', 'w') as f:
-        f.write(' '.join(f'-d {domain}' for domain in server_names))
+    with open('/tmp/le-domain.txt', 'a') as f:
+        f.write(' '.join(f'-d {domain}' for domain in server_names) + '\n')
     if len(server_names) > 1:
         server_name = server_names[0]
     return {
