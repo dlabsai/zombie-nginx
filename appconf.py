@@ -134,6 +134,7 @@ def emit_nginx_conf(config, *, indent=0):
     white = ' ' * indent
     for item in config:
         if isinstance(item[-1], list):
+            print(white)
             print(white + ' '.join(item[0:-1]) + ' {')
             emit_nginx_conf(item[-1], indent=indent + 2)
             print(white + '}')
@@ -192,6 +193,13 @@ def parse_single_upstream(server_name, config):
         'name': config['name'],
         'location': config['location'],
     }
+
+    upstream_raw_options = config.get("upstream_raw_options", [])
+    if upstream_raw_options:
+        if not isinstance(upstream_raw_options, list):
+            raise Exception(f'{server_name}.upstream_raw_options must be an array')
+        upstream.update(upstream_raw_options=upstream_raw_options)
+
     for proto in 'http', 'uwsgi':
         if config['url'].startswith(f'{proto}://'):
             upstream.update(url=config['url'][len(proto) + 3:], type=proto)
@@ -292,6 +300,9 @@ def generate_server(name, description, upstreams):
             ('proxy_set_header', 'X-Forwarded-For', '$proxy_add_x_forwarded_for'),
             ('proxy_set_header', 'Host', '$http_host'),
         ]
+
+        for option in upstream.get("upstream_raw_options", []):
+            config.append(option.split(" "))
         if upstream['type'] == 'uwsgi':
             config.append(('include', 'uwsgi_params'))
             config.append(('uwsgi_pass', upstream['name']))
