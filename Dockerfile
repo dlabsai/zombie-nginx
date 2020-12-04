@@ -1,6 +1,6 @@
 FROM alpine:edge
 
-LABEL maintainer="Marcin Baczyński <marcin.baczynski@dlabs.pl>"
+LABEL maintainer="Marcin Baczyński <marcin.baczynski@dlabs.ai>"
 
 ENV NGINX_VERSION 1.19.5
 
