@@ -1,4 +1,4 @@
-FROM alpine:edge
+FROM alpine:3.12.1
 
 LABEL maintainer="Marcin Baczyński <marcin.baczynski@dlabs.ai>"
 
