@@ -41,7 +41,7 @@ a nice `nginx.conf` to nginx, and server your application via HTTPS with certifi
 
 ## `nginx.yml` options
 
-Each entry in the `servers` section represents a separate virtual host.
+Each entry in the `servers` section represents a separate virtual host. You can create multiple virtual hosts.
 
 - `check_host_header`: optional, bool, default `yes`; whether to close connection on invalid `HTTP_HOST`
 - `server_name`: required, string; domain name where your site lives, can be a list of domains separated with space
