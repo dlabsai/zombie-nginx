@@ -2,7 +2,7 @@ FROM alpine:3.13.1
 
 LABEL maintainer="Marcin Baczyński <marcin.baczynski@dlabs.ai>"
 
-ENV NGINX_VERSION 1.19.5
+ENV NGINX_VERSION 1.19.9
 
 RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
     && CONFIG="\
