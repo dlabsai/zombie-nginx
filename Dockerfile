@@ -1,4 +1,4 @@
-FROM alpine:3.13.5
+FROM alpine:3.13.7
 
 LABEL maintainer="Marcin Baczyński <marcin.baczynski@dlabs.ai>"
 
@@ -89,7 +89,7 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
     && rm -rf /usr/src/nginx-$NGINX_VERSION \
     && cd / && apk add python3 \
     && apk add py3-pip \
-    && pip3 install -U pip && pip3 install PyYAML>=5.3 \
+    && pip3 install -U pip && pip3 install 'PyYAML>=5.3' \
     && apk add certbot \
     \
     && runDeps="$( \
