@@ -2,9 +2,9 @@ FROM alpine:3.13.12
 
 LABEL maintainer="Marcin Baczyński <marcin.baczynski@dlabs.ai>"
 
-ENV NGINX_VERSION 1.20.2
+ENV NGINX_VERSION 1.22.1
 
-RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
+RUN GPG_KEYS="B0F4253373F8F6F510D42178520A9993A1C052F8 13C82A63B603576156E30A4EA0EA981B66B0D967" \
     && CONFIG="\
         --prefix=/etc/nginx \
         --sbin-path=/usr/sbin/nginx \
@@ -66,8 +66,8 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
         hkp://p80.pool.sks-keyservers.net:80 \
         pgp.mit.edu \
     ; do \
-        echo "Fetching GPG key $GPG_KEYS from $server"; \
-        gpg --keyserver "$server" --keyserver-options timeout=10 --recv-keys "$GPG_KEYS" && found=yes && break; \
+        echo "Fetching GPG keys $GPG_KEYS from $server"; \
+        gpg --keyserver "$server" --keyserver-options timeout=10 --recv-keys $GPG_KEYS && found=yes && break; \
     done; \
     test -z "$found" && echo >&2 "error: failed to fetch GPG key $GPG_KEYS" && exit 1; \
     gpg --batch --verify nginx.tar.gz.asc nginx.tar.gz \
