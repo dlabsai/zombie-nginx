@@ -61,8 +61,8 @@ RUN GPG_KEYS="B0F4253373F8F6F510D42178520A9993A1C052F8 13C82A63B603576156E30A4EA
     && export GNUPGHOME="$(mktemp -d)" \
     && found=''; \
     for server in \
-        ha.pool.sks-keyservers.net \
         hkp://keyserver.ubuntu.com:80 \
+        ha.pool.sks-keyservers.net \
         hkp://p80.pool.sks-keyservers.net:80 \
         pgp.mit.edu \
     ; do \
